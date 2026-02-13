@@ -1,1 +1,200 @@
-log in
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30-Hour Sprint Planner</title>
+<style>
+  :root {
+    --primary-color: #1E90FF;
+    --bg-color: #f0f4f8;
+    --header-bg: var(--primary-color);
+    --footer-bg: #222;
+    --text-color: #fff;
+  }
+
+  body { margin: 0; font-family: Arial, sans-serif; background-color: var(--bg-color); }
+  header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:var(--header-bg); color:var(--text-color);}
+  .nav-left a { color:var(--text-color); text-decoration:none; margin-right:15px; font-weight:bold;}
+  .nav-right { display:flex; gap:10px; align-items:center;}
+  main { padding:20px; }
+  input, select, button { padding:5px 10px; border-radius:5px; border:none; margin:5px 0; }
+  button { cursor:pointer; }
+  .task-list, .timeline, .priority-board, .progress-board { margin:20px 0; }
+  .task-item { padding:5px; border-left:5px solid var(--primary-color); margin-bottom:5px; background:#fff; border-radius:4px; }
+  .progress-bar { position:relative; width:100%; background:#ddd; border-radius:8px; overflow:hidden; margin-bottom:10px; }
+  .progress-bar-fill { height:25px; background-color:var(--primary-color); width:0%; border-radius:8px; transition: width 1s ease-in-out; }
+  footer { text-align:center; padding:10px; background-color:var(--footer-bg); color:#fff; }
+  .focus-mode { background-color:var(--primary-color); color:#fff; font-weight:bold; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="#">Home</a>
+    <a href="#">Tasks</a>
+    <a href="#">Timeline</a>
+    <a href="#">Settings</a>
+  </div>
+  <div class="nav-right">
+    <button id="musicToggle">🎵 Music On</button>
+    <input type="color" id="colorPicker" value="#1E90FF">
+  </div>
+</header>
+
+<main>
+  <h1>30-Hour Sprint Planner</h1>
+
+  <div class="task-input">
+    <h2>Add Task</h2>
+    <input type="text" id="taskName" placeholder="Task Name">
+    <input type="text" id="taskSkills" placeholder="Skills Needed">
+    <input type="number" id="taskTime" placeholder="Time (hrs)" min="0.5" step="0.5">
+    <button onclick="addTask()">Add Task</button>
+  </div>
+
+  <div class="task-list">
+    <h2>Tasks</h2>
+    <ul id="tasks"></ul>
+  </div>
+
+  <div class="timeline">
+    <h2>Timeline</h2>
+    <ul id="timeline"></ul>
+  </div>
+
+  <div class="priority-board">
+    <h2>Priority Board</h2>
+    <ul id="priorityBoard"></ul>
+  </div>
+
+  <div class="progress-board">
+    <h2>Progress</h2>
+    <div class="progress-bar">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <button class="focus-mode" onclick="startFocusMode()">Enter Focus Mode</button>
+    <div id="timerDisplay"></div>
+  </div>
+</main>
+
+<footer>&copy; 2026 30-Hour Sprint Planner</footer>
+
+<!-- Local Music -->
+<audio id="bgMusic" loop>
+  <source src="h.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+let tasks = [];
+const tasksUl = document.getElementById('tasks');
+const timelineUl = document.getElementById('timeline');
+const priorityUl = document.getElementById('priorityBoard');
+const progressFill = document.getElementById('progressFill');
+const timerDisplay = document.getElementById('timerDisplay');
+
+// Music toggle
+const musicToggle = document.getElementById('musicToggle');
+const bgMusic = document.getElementById('bgMusic');
+let isPlaying = false;
+musicToggle.addEventListener('click', () => {
+  if(isPlaying){
+    bgMusic.pause(); 
+    musicToggle.textContent='🎵 Music Off'; 
+  } else { 
+    bgMusic.play(); 
+    musicToggle.textContent='🎵 Music On'; 
+  }
+  isPlaying = !isPlaying;
+});
+
+// Color picker
+const colorPicker = document.getElementById('colorPicker');
+colorPicker.addEventListener('input', e => {
+  document.documentElement.style.setProperty('--primary-color', e.target.value);
+  document.documentElement.style.setProperty('--header-bg', e.target.value);
+});
+
+// Add task
+function addTask(){
+  const name = document.getElementById('taskName').value;
+  const skills = document.getElementById('taskSkills').value;
+  const time = parseFloat(document.getElementById('taskTime').value);
+  if(!name || !skills || !time) return alert('Fill all fields');
+  
+  const task = { name, skills, time };
+  tasks.push(task);
+  renderTasks();
+  generateTimeline();
+  generatePriorityBoard();
+  updateProgress();
+  
+  document.getElementById('taskName').value='';
+  document.getElementById('taskSkills').value='';
+  document.getElementById('taskTime').value='';
+}
+
+// Render tasks
+function renderTasks(){
+  tasksUl.innerHTML='';
+  tasks.forEach(t => {
+    const li = document.createElement('li');
+    li.className='task-item';
+    li.textContent = `${t.name} | Skills: ${t.skills} | ${t.time} hrs`;
+    tasksUl.appendChild(li);
+  });
+}
+
+// Timeline
+function generateTimeline(){
+  timelineUl.innerHTML='';
+  let currentHour = 0;
+  tasks.forEach(t => {
+    const li = document.createElement('li');
+    li.textContent = `Hour ${currentHour.toFixed(1)} - ${currentHour+t.time} : ${t.name}`;
+    timelineUl.appendChild(li);
+    currentHour += t.time;
+  });
+}
+
+// Priority board (by time descending)
+function generatePriorityBoard(){
+  priorityUl.innerHTML='';
+  const sorted = [...tasks].sort((a,b)=>b.time-a.time);
+  sorted.forEach(t => {
+    const li = document.createElement('li');
+    li.className='task-item';
+    li.textContent = `${t.name} | ${t.time} hrs`;
+    priorityUl.appendChild(li);
+  });
+}
+
+// Progress bar
+function updateProgress(){
+  const totalTime = tasks.reduce((sum,t)=>sum+t.time,0);
+  const percent = Math.min((totalTime/30)*100,100);
+  progressFill.style.width = percent+'%';
+}
+
+// Focus mode with timer (simple 25 min countdown)
+let focusInterval;
+function startFocusMode(){
+  if(focusInterval) clearInterval(focusInterval);
+  let timeLeft = 25 * 60; // 25 mins
+  timerDisplay.textContent = formatTime(timeLeft);
+  focusInterval = setInterval(()=>{
+    timeLeft--;
+    timerDisplay.textContent = formatTime(timeLeft);
+    if(timeLeft<=0){ clearInterval(focusInterval); alert("Focus session complete!"); }
+  },1000);
+}
+
+function formatTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = (sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+</script>
+</body>
+</html>
