@@ -1,3 +1,7 @@
+function groupWithAI(){
+  alert("AI button clicked");
+}
+
 function addNote(){
   const input = document.getElementById("noteInput");
   const text = input.value.trim();
