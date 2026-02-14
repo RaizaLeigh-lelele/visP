@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sticky Board with Brush, Text Size, and Eraser</title>
+<style>
+  body { 
+    font-family: sans-serif; 
+    margin: 0; 
+    padding: 20px; 
+    background: linear-gradient(to bottom, #f0f8ff, #e0eafc); 
+  }
+
+  #toolbar { 
+    margin-bottom: 10px; 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 10px; 
+    align-items: center; 
+  }
+
+  canvas { 
+    border: 1px solid #ccc; 
+    cursor: crosshair; 
+  }
+
+  #stickyBoard { 
+    position: relative; 
+    width: 100%; 
+    height: 70vh; 
+    border: 2px dashed #aaa; 
+    background: linear-gradient(135deg,#f9f9f9,#e0e0f8); 
+    overflow: hidden; 
+  }
+
+  .sticky { 
+    position: absolute; 
+    min-width: 150px; 
+    min-height: 100px; 
+    padding: 10px; 
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
+    cursor: move; 
+    user-select: none; 
+    word-wrap: break-word; 
+    display: flex; 
+    flex-direction: column; 
+  }
+
+  .sticky.highlight { 
+    border: 2px solid #ff0000; 
+    background: #fff3f3; 
+  }
+
+  .sticky-header { 
+    display: flex; 
+    justify-content: flex-end; 
+    align-items: center; 
+  }
+
+  .sticky-header button { 
+    cursor: pointer; 
+    background: transparent; 
+    border: none; 
+    font-size: 18px; 
+    margin-left: 5px; 
+    transition: transform 0.1s, 
+    color 0.1s; 
+  }
+
+  .sticky-header button:hover { 
+    transform: scale(1.3); 
+    color: #ff5722; 
+  }
+
+  .sticky-canvas { 
+    border: 1px solid #aaa; 
+    margin-top: 5px; 
+    cursor: crosshair; 
+    }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <canvas id="canvasInput" width="300" height="150"></canvas>
+  <button id="addSticky">Add Sticky Note</button>
+  <button id="clearBoard">Clear Board</button>
+  <button id="favoritesPage">Show Favorites</button>
+
+  <label>Tool Color 1: <input type="color" id="toolColor1" value="#000000"></label>
+  <label>Tool Color 2: <input type="color" id="toolColor2"></label>
+  <label>Sticky Color: <input type="color" id="stickyColor" value="#fffa75"></label>
+  <label>Canvas BG: <input type="color" id="canvasBG" value="#ffffff"></label>
+
+  <label>Mode:
+    <select id="drawMode">
+      <option value="draw">Draw</option>
+      <option value="line">Line</option>
+      <option value="rect">Rectangle</option>
+      <option value="circle">Circle</option>
+      <option value="arrow">Arrow</option>
+      <option value="text">Text</option>
+      <option value="eraser">Eraser</option>
+    </select>
+  </label>
+
+  <label>Brush Size: <input type="number" id="brushSize" min="1" max="50" value="2" style="width:60px"></label>
+  <label>Text Size: <input type="number" id="textSize" min="8" max="72" value="16" style="width:60px"></label>
+  <input type="text" id="textInput" placeholder="Text for text mode" />
+</div>
+
+<div id="stickyBoard"></div>
+
+<script>
+const board = document.getElementById('stickyBoard');
+const canvas = document.getElementById('canvasInput');
+const ctx = canvas.getContext('2d');
+const addBtn = document.getElementById('addSticky');
+const clearBtn = document.getElementById('clearBoard');
+const favoritesBtn = document.getElementById('favoritesPage');
+const toolColor1 = document.getElementById('toolColor1');
+const toolColor2 = document.getElementById('toolColor2');
+const stickyColorPicker = document.getElementById('stickyColor');
+const drawMode = document.getElementById('drawMode');
+const textInput = document.getElementById('textInput');
+const canvasBG = document.getElementById('canvasBG');
+const brushSize = document.getElementById('brushSize');
+const textSize = document.getElementById('textSize');
+
+let stickies = JSON.parse(localStorage.getItem('stickies') || '[]');
+let drawing = false, startX = 0, startY = 0;
+let showFavorites = false;
+
+canvasBG.addEventListener('input', () => {
+  ctx.fillStyle = canvasBG.value;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
+
+function getStrokeStyle(ctx,x0,y0,x1,y1){
+  if(toolColor2.value && drawMode.value!=='text' && drawMode.value!=='eraser') {
+    const grad = ctx.createLinearGradient(x0,y0,x1,y1);
+    grad.addColorStop(0,toolColor1.value);
+    grad.addColorStop(1,toolColor2.value);
+    return grad;
+  } 
+  return toolColor1.value;
+}
+
+canvas.addEventListener('mousedown', e => {
+  startX = e.offsetX; startY = e.offsetY;
+  if(drawMode.value==='draw' || drawMode.value==='eraser'){ 
+    drawing=true; 
+    ctx.beginPath(); 
+    ctx.moveTo(startX,startY); 
+    ctx.strokeStyle = drawMode.value==='eraser' ? canvasBG.value : getStrokeStyle(ctx,startX,startY,startX,startY); 
+    ctx.lineWidth = parseInt(brushSize.value); 
+  } else if (drawMode.value==='text') { 
+    ctx.fillStyle = toolColor1.value; 
+    ctx.font=`${parseInt(textSize.value)}px sans-serif`; 
+    ctx.fillText(textInput.value,startX,startY); 
+  }
+});
+
+canvas.addEventListener('mousemove', e => { 
+  if((drawMode.value==='draw' || drawMode.value==='eraser') && drawing) { 
+    ctx.strokeStyle = drawMode.value==='eraser' ? canvasBG.value : getStrokeStyle(ctx,startX,startY,e.offsetX,e.offsetY); 
+    ctx.lineWidth = parseInt(brushSize.value);
+    ctx.lineTo(e.offsetX,e.offsetY); 
+    ctx.stroke(); 
+  } 
+});
+
+canvas.addEventListener('mouseup', e=> {
+  if(drawMode.value==='draw' || drawMode.value==='eraser') drawing=false;
+  else if(drawMode.value==='line') drawLine(ctx,startX,startY,e.offsetX,e.offsetY,getStrokeStyle(ctx,startX,startY,e.offsetX,e.offsetY));
+  else if(drawMode.value==='rect') { 
+    ctx.strokeStyle=getStrokeStyle(ctx,startX,startY,e.offsetX,e.offsetY); 
+    ctx.lineWidth = parseInt(brushSize.value); 
+    ctx.strokeRect(startX,startY,e.offsetX-startX,e.offsetY-startY); }
+  else if(drawMode.value==='circle'){ ctx.strokeStyle=getStrokeStyle(ctx,startX,startY,e.offsetX,e.offsetY); 
+    ctx.lineWidth = parseInt(brushSize.value); 
+    const r=Math.hypot(e.offsetX-startX,e.offsetY-startY); 
+    ctx.beginPath(); 
+    ctx.arc(startX,startY,r,0,2*Math.PI); 
+    ctx.stroke(); }
+  else if(drawMode.value==='arrow') drawArrow(ctx,startX,startY,e.offsetX,e.offsetY,getStrokeStyle(ctx,startX,startY,e.offsetX,e.offsetY));
+});
+
+function drawLine(ctx,x0,y0,x1,y1,color){ 
+  ctx.strokeStyle=color; 
+  ctx.beginPath(); 
+  ctx.moveTo(x0,y0); 
+  ctx.lineTo(x1,y1); 
+  ctx.stroke(); 
+}
+function drawArrow(ctx,x0,y0,x1,y1,color){ 
+  const headlen=10, dx=x1-x0, dy=y1-y0, angle=Math.atan2(dy,dx); 
+  ctx.strokeStyle=color; 
+  ctx.beginPath(); 
+  ctx.moveTo(x0,y0); 
+  ctx.lineTo(x1,y1); ctx.stroke(); 
+  ctx.beginPath(); ctx.moveTo(x1,y1); 
+  ctx.lineTo(x1-headlen*Math.cos(angle-Math.PI/6),y1-headlen*Math.sin(angle-Math.PI/6)); 
+  ctx.lineTo(x1-headlen*Math.cos(angle+Math.PI/6),y1-headlen*Math.sin(angle+Math.PI/6)); 
+  ctx.lineTo(x1,y1); ctx.fillStyle=color; ctx.fill(); 
+}
+
+function createSticky(data){
+  const sticky=document.createElement('div'); 
+  sticky.className='sticky'; 
+  sticky.style.background=data.color; 
+  sticky.style.left=data.x+'px'; 
+  sticky.style.top=data.y+'px';
+  const header=document.createElement('div'); 
+  header.className='sticky-header';
+  const favBtn=document.createElement('button'); 
+  favBtn.textContent='❤️';
+  const editBtn=document.createElement('button'); 
+  editBtn.textContent='🖊️';
+  const delBtn=document.createElement('button'); 
+  delBtn.textContent='🗑️';
+  header.append(favBtn,editBtn,delBtn); 
+  sticky.appendChild(header);
+
+  const sCanvas=document.createElement('canvas'); 
+  sCanvas.width=180; 
+  sCanvas.height=120; 
+  sCanvas.className='sticky-canvas'; 
+  sticky.appendChild(sCanvas);
+  const sCtx=sCanvas.getContext('2d');
+  sCtx.fillStyle = data.bgColor || "#ffffff"; 
+  sCtx.fillRect(0,0,sCanvas.width,sCanvas.height);
+  if(data.content){ 
+    const img=new Image(); 
+    img.src=data.content; 
+    img.onload=()=>sCtx.drawImage(img,0,0,sCanvas.width,sCanvas.height); 
+  }
+
+  let editing=false;
+  favBtn.addEventListener('click',()=>{ data.favorite=!data.favorite; 
+    saveStickies(); renderBoard(); 
+  });
+  editBtn.addEventListener('click',()=>{ 
+    editing=!editing; 
+    sticky.classList.toggle('highlight',editing); 
+  });
+  delBtn.addEventListener('click',()=>{ sticky.remove(); 
+    stickies=stickies.filter(s=>s.id!==data.id); 
+    saveStickies(); 
+  });
+
+  let offsetX,offsetY;
+  header.addEventListener('mousedown',e=>{ offsetX=e.clientX-sticky.offsetLeft; 
+    offsetY=e.clientY-sticky.offsetTop; function move(e){ 
+      sticky.style.left=e.clientX-offsetX+'px'; 
+      sticky.style.top=e.clientY-offsetY+'px'; 
+    } function up(){ 
+      document.removeEventListener('mousemove',move); 
+      document.removeEventListener('mouseup',up); 
+      const idx=stickies.findIndex(s=>s.id===data.id); if(idx>-1){ 
+        stickies[idx].x=sticky.offsetLeft; 
+        stickies[idx].y=sticky.offsetTop; 
+        saveStickies(); 
+      } } document.addEventListener('mousemove',move); 
+      document.addEventListener('mouseup',up); 
+    });
+
+  let sDrawing=false,sStartX=0,sStartY=0;
+  sCanvas.addEventListener('mousedown',e=>{ if(!editing) return; 
+    sStartX=e.offsetX; 
+    sStartY=e.offsetY; 
+    if(drawMode.value==='draw' || drawMode.value==='eraser'){ 
+      sDrawing=true; sCtx.beginPath(); 
+      sCtx.moveTo(sStartX,sStartY); 
+      sCtx.lineWidth = parseInt(brushSize.value); 
+      sCtx.strokeStyle = drawMode.value==='eraser'?sCtx.fillStyle:getStrokeStyle(sCtx,sStartX,sStartY,sStartX,sStartY); 
+    } 
+    else if(drawMode.value==='text'){ 
+      sCtx.fillStyle = toolColor1.value; 
+      sCtx.font=`${parseInt(textSize.value)}px sans-serif`; 
+      sCtx.fillText(textInput.value,sStartX,sStartY); 
+      saveStickyCanvas(); 
+    } 
+  });
+  sCanvas.addEventListener('mousemove',e=>{ 
+    if(!editing) return; 
+    if((drawMode.value==='draw'||drawMode.value==='eraser') && sDrawing){ 
+      sCtx.lineWidth = parseInt(brushSize.value); 
+      sCtx.strokeStyle = drawMode.value==='eraser'?sCtx.fillStyle:getStrokeStyle(sCtx,sStartX,sStartY,e.offsetX,e.offsetY); 
+      sCtx.lineTo(e.offsetX,e.offsetY); 
+      sCtx.stroke(); 
+    } 
+  });
+  sCanvas.addEventListener('mouseup',e=>{ 
+    if(!editing) return; if(drawMode.value==='draw'||drawMode.value==='eraser'){ 
+      sDrawing=false; saveStickyCanvas(); 
+    } 
+  });
+
+  function saveStickyCanvas(){ const idx=stickies.findIndex(s=>s.id===data.id); 
+    if(idx>-1){ stickies[idx].content=sCanvas.toDataURL(); 
+      stickies[idx].bgColor=sCtx.fillStyle; saveStickies(); 
+    } 
+  }
+
+  sCanvas.addEventListener('dblclick',()=>{
+    const newColor = prompt("Enter canvas background color (hex or name):", sCtx.fillStyle);
+    if(newColor){ sCtx.fillStyle=newColor; sCtx.fillRect(0,0,sCanvas.width,sCanvas.height); saveStickyCanvas(); }
+  });
+
+  board.appendChild(sticky);
+}
+
+function saveStickies(){ localStorage.setItem('stickies',JSON.stringify(stickies)); }
+function renderBoard(){ board.innerHTML=''; stickies.forEach(s=>{ if(showFavorites){ if(s.favorite) createSticky(s); } else createSticky(s); }); }
+stickies.forEach(createSticky);
+
+addBtn.addEventListener('click',()=>{
+  const dataURL=canvas.toDataURL();
+  const newSticky={ 
+    id:Date.now(), content:dataURL, x:10, y:10, color:stickyColorPicker.value, bgColor:canvasBG.value, favorite:false 
+  };
+  stickies.push(newSticky); saveStickies(); renderBoard(); ctx.clearRect(0,0,canvas.width,canvas.height);
+});
+clearBtn.addEventListener('click',()=>{ 
+  stickies=stickies.filter(s=>s.favorite); 
+  saveStickies(); 
+  renderBoard(); 
+  ctx.clearRect(0,0,canvas.width,canvas.height); 
+});
+favoritesBtn.addEventListener('click',()=>{
+  showFavorites=!showFavorites;
+  favoritesBtn.textContent = showFavorites ? "Hide Favorites" : "Show Favorites";
+  renderBoard();
+});
+</script>
+</body>
+</html>
