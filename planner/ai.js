@@ -41,7 +41,7 @@ ${notes.join("\n")}
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "Authorization":"Bearer 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"
+      "Authorization":"Bearer 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"
     },
     body: JSON.stringify({
       model:"gpt-4.1-mini",
