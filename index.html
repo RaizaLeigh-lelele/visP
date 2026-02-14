@@ -9,8 +9,7 @@
 <body>
     <header>
         <div class="nav-left">
-            <a href="notes.html">Drawing Notes</a>
-            <a href="v-day_index.html">Valentines Theme</a>
+            <a href="index.html">Home</a>
         </div>
         <div class="nav-right">
             <button id="musicToggle">🎵</button>
@@ -48,6 +47,9 @@
 
         <div class="panel">
             <h2>Planner Board</h2>
+            <button onclick="aiSortTasks()">AI Sort Tasks</button>
+            <button onclick="suggestNextTask()">What should I do next?</button>
+            <div id="aiSuggestion" style="margin-top:10px;font-weight:bold;"></div>
             <div id="plannerBoard"></div>
         </div>
 </main>
@@ -84,7 +86,6 @@ let focusInterval = null;
 let focusEndTime = null;
 let focusStartTime = null;
 
-// Load tasks from localStorage
 if (localStorage.getItem('tasks')) {
     tasks = JSON.parse(localStorage.getItem('tasks'));
     renderPlanner();
@@ -120,11 +121,14 @@ function addTask() {
     const time = parseFloat(document.getElementById('taskTime').value);
     const diff = parseInt(document.getElementById('taskDifficulty').value);
     const due = new Date(document.getElementById('taskDue').value);
-    if (!name || !time || !diff || !due) return alert('Fill all fields');
+    if (!name || !time || !diff || isNaN(due.getTime())) {
+        return alert('Fill all fields');
+    }
+
     
     tasks.push({ name, time, diff, due: due.toISOString(), done: false });
     saveTasks();
-    renderPlanner();
+    aiSortTasks();
     updateProgress();
     
     document.getElementById('taskName').value = '';
@@ -142,27 +146,25 @@ function updateProgress() {
 
 function renderPlanner() {
     plannerBoard.innerHTML = '';
-    const now = new Date();
-    const sorted = tasks.slice().sort((a, b) => {
-        const scoreA = (new Date(a.due) - now) / 36e5 ? 1 / ((new Date(a.due) - now) / 36e5) : 0;
-        const scoreB = (new Date(b.due) - now) / 36e5 ? 1 / ((new Date(b.due) - now) / 36e5) : 0;
-        return (scoreB + b.diff + b.time) - (scoreA + a.diff + a.time);
-    });
 
     const row = document.createElement('div');
     row.className = 'flow-row';
-    sorted.forEach((t) => {
+
+    tasks.forEach((t) => {
         const node = document.createElement('div');
         node.className = 'task-node' + (t.done ? ' done' : '');
         node.innerHTML = `${t.name}<br>${t.time}h | D:${t.diff}`;
+
         node.onclick = () => {
             t.done = !t.done;
             node.classList.toggle('done');
             updateProgress();
-            saveTasks(); // save changes when task is toggled
+            saveTasks();
         };
+
         row.appendChild(node);
     });
+
     plannerBoard.appendChild(row);
 }
 
@@ -201,6 +203,45 @@ function stopFocusMode() {
 
 function formatTime(d) {
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function aiScore(task) {
+    const now = new Date();
+    const dueDate = new Date(task.due);
+
+    const hoursLeft = (dueDate - now) / 36e5;
+
+    const overduePenalty = hoursLeft < 0 ? Math.abs(hoursLeft) * 5 : 0;
+    const urgencyScore = hoursLeft > 0 ? 1 / hoursLeft : 5;
+    const difficultyScore = task.diff * 1.5;
+    const timeScore = task.time;
+
+    return (
+        urgencyScore +
+        difficultyScore +
+        timeScore +
+        overduePenalty
+    );
+}
+
+function aiSortTasks() {
+    tasks.sort((a, b) => aiScore(b) - aiScore(a));
+    saveTasks();
+    renderPlanner();
+}
+
+function suggestNextTask() {
+    const pending = tasks.filter(t => !t.done);
+    if (pending.length === 0) {
+        document.getElementById('aiSuggestion').textContent =
+            "🎉 All tasks completed!";
+        return;
+    }
+
+    const best = pending.sort((a, b) => aiScore(b) - aiScore(a))[0];
+
+    document.getElementById('aiSuggestion').textContent =
+        `Do this next: "${best.name}" (${best.time}h, Difficulty ${best.diff})`;
 }
 </script>
 </body>
