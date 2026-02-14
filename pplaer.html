@@ -320,17 +320,28 @@ function formatTime(d){return `${d.getHours().toString().padStart(2,'0')}:${d.ge
 async function generateAIPlanner(){
     if(!tasks.length) return alert("Add some tasks first!");
 
-    const res = await fetch('http://localhost:3000/api/plan', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ tasks })
-    });
-    const data = await res.json();
-    if(data.plan){
-        tasks = data.plan;
-        renderPlanner();
-    } else {
-        alert("Failed to generate AI plan");
+    try {
+        const res = await fetch('http://localhost:3000/api/plan', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ tasks })
+        });
+
+        if(!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Server returned an error");
+        }
+
+        const data = await res.json();
+        if(data.plan){
+            tasks = data.plan;
+            renderPlanner();
+        } else {
+            alert("Failed to generate AI plan");
+        }
+    } catch(err) {
+        console.error("AI Planner Error:", err);
+        alert("Error generating AI plan. Check console for details.");
     }
 }
 
