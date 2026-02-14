@@ -1,7 +1,3 @@
-function groupWithAI(){
-  alert("AI button clicked");
-}
-
 function addNote(){
   const input = document.getElementById("noteInput");
   const text = input.value.trim();
@@ -41,7 +37,7 @@ ${notes.join("\n")}
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "Authorization":"Bearer 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"
+      "Authorization":"Bearer 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"
     },
     body: JSON.stringify({
       model:"gpt-4.1-mini",
@@ -51,8 +47,20 @@ ${notes.join("\n")}
 
   const data = await res.json();
 
-  const text = data.output[0].content[0].text;
-  const groups = JSON.parse(text);
+  const text = data.output?.[0]?.content?.[0]?.text;
+if (!text) {
+  alert("AI response empty or invalid");
+  return;
+}
+
+let groups;
+try {
+  groups = JSON.parse(text.trim());
+} catch(e) {
+  alert("Failed to parse AI response as JSON");
+  console.error(e, text);
+  return;
+}
 
   renderGroups(groups);
 }
