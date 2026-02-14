@@ -58,137 +58,150 @@
 </audio>
 
 <script>
-    const modeToggle = document.getElementById("modeToggle");
-    const colorToggle = document.getElementById("colorToggle");
-    const colorPicker = document.getElementById("colorPicker");
+const modeToggle = document.getElementById("modeToggle");
+const colorToggle = document.getElementById("colorToggle");
+const colorPicker = document.getElementById("colorPicker");
 
-    modeToggle.addEventListener("click",()=>{
-        document.body.classList.toggle("dark");
+modeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+});
+
+colorToggle.addEventListener("click", () => {
+    colorPicker.style.display =
+        colorPicker.style.display === "none" ? "inline-block" : "none";
+});
+
+let tasks = [];
+const plannerBoard = document.getElementById('plannerBoard');
+const progressFill = document.getElementById('progressFill');
+const musicToggle = document.getElementById('musicToggle');
+const bgMusic = document.getElementById('bgMusic');
+const focusDisplay = document.getElementById('focusDisplay');
+const focusTimeInput = document.getElementById('focusTime');
+
+let isPlaying = false;
+let focusInterval = null;
+let focusEndTime = null;
+let focusStartTime = null;
+
+// Load tasks from localStorage
+if (localStorage.getItem('tasks')) {
+    tasks = JSON.parse(localStorage.getItem('tasks'));
+    renderPlanner();
+    updateProgress();
+}
+
+musicToggle.addEventListener('click', () => {
+    if (isPlaying) { bgMusic.pause(); musicToggle.textContent = '🎵 Music Off'; }
+    else { bgMusic.play(); musicToggle.textContent = '🎵 Music On'; }
+    isPlaying = !isPlaying;
+});
+
+document.getElementById('colorPicker').addEventListener('input', e => {
+    const c = e.target.value;
+    document.documentElement.style.setProperty('--primary-color', c);
+    document.documentElement.style.setProperty('--header-bg', c);
+    document.documentElement.style.setProperty('--panel-bg', '#fff');
+    document.documentElement.style.setProperty('--footer-bg', c);
+    document.documentElement.style.setProperty('--button-bg', c);
+    document.documentElement.style.setProperty('--button-text', '#fff');
+    document.documentElement.style.setProperty('--task-border', c);
+    document.documentElement.style.setProperty('--arrow-color', c);
+    document.documentElement.style.setProperty('--progress-fill', c);
+    document.documentElement.style.setProperty('--text-color', c);
+});
+
+function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+function addTask() {
+    const name = document.getElementById('taskName').value;
+    const time = parseFloat(document.getElementById('taskTime').value);
+    const diff = parseInt(document.getElementById('taskDifficulty').value);
+    const due = new Date(document.getElementById('taskDue').value);
+    if (!name || !time || !diff || !due) return alert('Fill all fields');
+    
+    tasks.push({ name, time, diff, due: due.toISOString(), done: false });
+    saveTasks();
+    renderPlanner();
+    updateProgress();
+    
+    document.getElementById('taskName').value = '';
+    document.getElementById('taskTime').value = '';
+    document.getElementById('taskDifficulty').value = '';
+    document.getElementById('taskDue').value = '';
+}
+
+function updateProgress() {
+    const doneTasks = tasks.filter(t => t.done).reduce((sum, t) => sum + t.time, 0);
+    const totalTime = tasks.reduce((sum, t) => sum + t.time, 0);
+    const percent = totalTime ? Math.min((doneTasks / totalTime) * 100, 100) : 0;
+    progressFill.style.width = percent + '%';
+}
+
+function renderPlanner() {
+    plannerBoard.innerHTML = '';
+    const now = new Date();
+    const sorted = tasks.slice().sort((a, b) => {
+        const scoreA = (new Date(a.due) - now) / 36e5 ? 1 / ((new Date(a.due) - now) / 36e5) : 0;
+        const scoreB = (new Date(b.due) - now) / 36e5 ? 1 / ((new Date(b.due) - now) / 36e5) : 0;
+        return (scoreB + b.diff + b.time) - (scoreA + a.diff + a.time);
     });
 
-
-    colorToggle.addEventListener("click",()=>{
-        colorPicker.style.display =
-            colorPicker.style.display === "none"
-            ? "inline-block"
-            : "none";
+    const row = document.createElement('div');
+    row.className = 'flow-row';
+    sorted.forEach((t) => {
+        const node = document.createElement('div');
+        node.className = 'task-node' + (t.done ? ' done' : '');
+        node.innerHTML = `${t.name}<br>${t.time}h | D:${t.diff}`;
+        node.onclick = () => {
+            t.done = !t.done;
+            node.classList.toggle('done');
+            updateProgress();
+            saveTasks(); // save changes when task is toggled
+        };
+        row.appendChild(node);
     });
+    plannerBoard.appendChild(row);
+}
 
-    let tasks=[];
-    const plannerBoard=document.getElementById('plannerBoard');
-    const progressFill=document.getElementById('progressFill');
-    const musicToggle=document.getElementById('musicToggle');
-    const bgMusic=document.getElementById('bgMusic');
-    const focusDisplay=document.getElementById('focusDisplay');
-    const focusTimeInput=document.getElementById('focusTime');
+function startFocusMode() {
+    const mins = parseInt(focusTimeInput.value);
+    if (!mins || mins < 1 || mins > 60) return alert('Enter 1-60 minutes');
+    if (focusInterval) clearInterval(focusInterval);
 
-    let isPlaying=false;
-    let focusInterval=null;
-    let focusEndTime=null;
-    let focusStartTime=null;
+    focusStartTime = new Date();
+    focusEndTime = new Date(focusStartTime.getTime() + mins * 60 * 1000);
 
-    musicToggle.addEventListener('click',()=>{
-        if(isPlaying){bgMusic.pause();musicToggle.textContent='🎵 Music Off';}
-        else{bgMusic.play();musicToggle.textContent='🎵 Music On';}
-        isPlaying=!isPlaying;
-    });
+    focusInterval = setInterval(() => {
+        const now = new Date();
+        let remaining = Math.floor((focusEndTime - now) / 1000);
+        if (remaining <= 0) {
+            stopFocusMode();
+            alert("Focus session complete!");
+            return;
+        }
+        const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+        const s = (remaining % 60).toString().padStart(2, '0');
+        focusDisplay.textContent = `Focus: ${formatTime(focusStartTime)} → ${formatTime(focusEndTime)} | ${m}:${s} remaining`;
+    }, 1000);
+}
 
-    document.getElementById('colorPicker').addEventListener('input', e => {
-        const c = e.target.value;
-
-        document.documentElement.style.setProperty('--primary-color', c);
-        document.documentElement.style.setProperty('--header-bg', c);
-        document.documentElement.style.setProperty('--panel-bg', '#fff');
-        document.documentElement.style.setProperty('--footer-bg', c);
-        document.documentElement.style.setProperty('--button-bg', c);
-        document.documentElement.style.setProperty('--button-text', '#fff');
-        document.documentElement.style.setProperty('--task-border', c);
-        document.documentElement.style.setProperty('--arrow-color', c);
-        document.documentElement.style.setProperty('--progress-fill', c);
-        document.documentElement.style.setProperty('--text-color', c);
-    });
-
-    function addTask(){
-        const name=document.getElementById('taskName').value;
-        const time=parseFloat(document.getElementById('taskTime').value);
-        const diff=parseInt(document.getElementById('taskDifficulty').value);
-        const due=new Date(document.getElementById('taskDue').value);
-        if(!name||!time||!diff||!due) return alert('Fill all fields');
-        tasks.push({name,time,diff,due,done:false});
-        renderPlanner();
-        updateProgress();
-        document.getElementById('taskName').value='';
-        document.getElementById('taskTime').value='';
-        document.getElementById('taskDifficulty').value='';
-        document.getElementById('taskDue').value='';
-    }
-
-    function updateProgress(){
-        const doneTasks=tasks.filter(t=>t.done).reduce((sum,t)=>sum+t.time,0);
-        const totalTime=tasks.reduce((sum,t)=>sum+t.time,0);
-        const percent=totalTime? Math.min((doneTasks/totalTime)*100,100):0;
-        progressFill.style.width=percent+'%';
-    }
-
-    function renderPlanner(){
-        plannerBoard.innerHTML='';
-        const now=new Date();
-        const sorted=tasks.slice().sort((a,b)=>{
-            const scoreA=(a.due-now)/36e5? 1/((a.due-now)/36e5):0;
-            const scoreB=(b.due-now)/36e5? 1/((b.due-now)/36e5):0;
-            return (scoreB+b.diff+b.time)-(scoreA+a.diff+a.time);
-        });
-
-        const row=document.createElement('div');
-        row.className='flow-row';
-        sorted.forEach((t,i)=>{
-            const node=document.createElement('div');
-            node.className='task-node'+(t.done?' done':'');
-            node.innerHTML=`${t.name}<br>${t.time}h | D:${t.diff}`;
-            node.onclick=()=>{
-                t.done=!t.done;
-                node.classList.toggle('done');
-                updateProgress();
-            };
-            row.appendChild(node);
-        });
-        plannerBoard.appendChild(row);
-    }
-
-    function startFocusMode(){
-        const mins=parseInt(focusTimeInput.value);
-        if(!mins || mins<1 || mins>60) return alert('Enter 1-60 minutes');
-        if(focusInterval) clearInterval(focusInterval);
-
-        focusStartTime=new Date();
-        focusEndTime=new Date(focusStartTime.getTime() + mins*60*1000);
-
-        focusInterval=setInterval(()=>{
-            const now=new Date();
-            let remaining=Math.floor((focusEndTime-now)/1000);
-            if(remaining<=0){
-                stopFocusMode();
-                alert("Focus session complete!");
-                return;
-            }
-            const m=Math.floor(remaining/60).toString().padStart(2,'0');
-            const s=(remaining%60).toString().padStart(2,'0');
-            focusDisplay.textContent=`Focus: ${formatTime(focusStartTime)} → ${formatTime(focusEndTime)} | ${m}:${s} remaining`;
-        },1000);
-    }
-
-    function stopFocusMode(){
-    if(focusInterval) clearInterval(focusInterval);
-    focusInterval=null;
-    if(focusStartTime){
-        const endTime=new Date();
-        focusDisplay.textContent=`Focus session ended: ${formatTime(focusStartTime)} → ${formatTime(endTime)}`;
-        focusStartTime=null;
-        focusEndTime=null;
+function stopFocusMode() {
+    if (focusInterval) clearInterval(focusInterval);
+    focusInterval = null;
+    if (focusStartTime) {
+        const endTime = new Date();
+        focusDisplay.textContent = `Focus session ended: ${formatTime(focusStartTime)} → ${formatTime(endTime)}`;
+        focusStartTime = null;
+        focusEndTime = null;
     }
 }
 
-function formatTime(d){return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;}
+function formatTime(d) {
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
 </script>
 </body>
 </html>
