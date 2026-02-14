@@ -3,113 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="notes.css">
 <title>Sticky Board with Brush, Text Size, and Eraser</title>
-<style>
-  body { 
-    font-family: sans-serif; 
-    margin: 0; 
-    padding: 20px; 
-    background: linear-gradient(to bottom, #f0f8ff, #e0eafc); 
-  }
-
-  #toolbar { 
-    margin-bottom: 10px; 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 10px; 
-    align-items: center; 
-  }
-
-  canvas { 
-    border: 1px solid #ccc; 
-    cursor: crosshair; 
-  }
-
-  #stickyBoard { 
-    position: relative; 
-    width: 100%; 
-    height: 70vh; 
-    border: 2px dashed #aaa; 
-    background: linear-gradient(135deg,#f9f9f9,#e0e0f8); 
-    overflow: hidden; 
-  }
-
-  .sticky { 
-    position: absolute; 
-    min-width: 150px; 
-    min-height: 100px; 
-    padding: 10px; 
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
-    cursor: move; 
-    user-select: none; 
-    word-wrap: break-word; 
-    display: flex; 
-    flex-direction: column; 
-  }
-
-  .sticky.highlight { 
-    border: 2px solid #ff0000; 
-    background: #fff3f3; 
-  }
-
-  .sticky-header { 
-    display: flex; 
-    justify-content: flex-end; 
-    align-items: center; 
-  }
-
-  .sticky-header button { 
-    cursor: pointer; 
-    background: transparent; 
-    border: none; 
-    font-size: 18px; 
-    margin-left: 5px; 
-    transition: transform 0.1s, 
-    color 0.1s; 
-  }
-
-  .sticky-header button:hover { 
-    transform: scale(1.3); 
-    color: #ff5722; 
-  }
-
-  .sticky-canvas { 
-    border: 1px solid #aaa; 
-    margin-top: 5px; 
-    cursor: crosshair; 
-    }
-</style>
 </head>
 <body>
+<header>
+  <div class="nav-left">
+    <a href="index.html">Home</a>
+  </div>
+
+  <div class="nav-right">
+    <button id="musicToggle">🎵</button>
+    <button id="modeToggle">🌙</button>
+    <button id="colorToggle">🌈</button>
+    <input type="color" id="colorPicker" value="#1E90FF" style="display:none;">
+  </div>
+</header>
+
 <div id="toolbar">
-  <canvas id="canvasInput" width="300" height="150"></canvas>
-  <button id="addSticky">Add Sticky Note</button>
+  <canvas id="canvasInput" width="500" height="250"></canvas>
+
+  <button id="addSticky">Add Sticky</button>
   <button id="clearBoard">Clear Board</button>
   <button id="favoritesPage">Show Favorites</button>
 
-  <label>Tool Color 1: <input type="color" id="toolColor1" value="#000000"></label>
-  <label>Tool Color 2: <input type="color" id="toolColor2"></label>
-  <label>Sticky Color: <input type="color" id="stickyColor" value="#fffa75"></label>
-  <label>Canvas BG: <input type="color" id="canvasBG" value="#ffffff"></label>
+  <label>Tool 1 <input type="color" id="toolColor1" value="#000000"></label>
+  <label>Tool 2 <input type="color" id="toolColor2"></label>
+  <label>Sticky <input type="color" id="stickyColor" value="#fffa75"></label>
+  <label>Canvas BG <input type="color" id="canvasBG" value="#ffffff"></label>
 
-  <label>Mode:
-    <select id="drawMode">
-      <option value="draw">Draw</option>
-      <option value="line">Line</option>
-      <option value="rect">Rectangle</option>
-      <option value="circle">Circle</option>
-      <option value="arrow">Arrow</option>
-      <option value="text">Text</option>
-      <option value="eraser">Eraser</option>
-    </select>
-  </label>
+  <select id="drawMode">
+    <option value="draw">Draw</option>
+    <option value="line">Line</option>
+    <option value="rect">Rectangle</option>
+    <option value="circle">Circle</option>
+    <option value="arrow">Arrow</option>
+    <option value="text">Text</option>
+    <option value="eraser">Eraser</option>
+  </select>
 
-  <label>Brush Size: <input type="number" id="brushSize" min="1" max="50" value="2" style="width:60px"></label>
-  <label>Text Size: <input type="number" id="textSize" min="8" max="72" value="16" style="width:60px"></label>
-  <input type="text" id="textInput" placeholder="Text for text mode" />
+  <label>Brush <input type="number" id="brushSize" value="2" min="1" max="50"></label>
+  <label>Text <input type="number" id="textSize" value="16" min="8" max="72"></label>
+  <input type="text" id="textInput" placeholder="Text here">
 </div>
 
 <div id="stickyBoard"></div>
+
+<audio id="bgMusic" loop>
+  <source src="h.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 const board = document.getElementById('stickyBoard');

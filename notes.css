@@ -1,0 +1,213 @@
+:root {
+    --primary-color: #7aa6ff;
+    --shadow-soft: 0 10px 40px rgba(0,0,0,0.15);
+    --shadow-strong: 0 20px 60px rgba(0,0,0,0.25);
+
+    --radius-big: 28px;
+    --radius-mid: 20px;
+
+    --panel-bg: rgba(255,255,255,0.45);
+    --panel-border: rgba(255,255,255,0.3);
+    --board-bg: rgba(255,255,255,0.35);
+    --input-bg: rgba(255,255,255,0.85);
+    --text-color: #2a2a2a;
+
+    --body-bg: url('https://wallpaperaccess.com/full/11465708.jpg') center/cover no-repeat fixed;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins','Segoe UI',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    padding:30px;
+    color:var(--text-color);
+    background:var(--body-bg);
+    position:relative;
+}
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:linear-gradient(135deg,var(--primary-color),transparent 60%);
+    opacity:0.15;
+    pointer-events:none;
+    z-index:0;
+}
+
+header{
+    backdrop-filter:blur(25px);
+    background:linear-gradient(to right,var(--primary-color),transparent);
+    padding:25px 50px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:var(--shadow-soft);
+    position:relative;
+    z-index:3;
+    border-bottom:1px solid rgba(255,255,255,0.2);
+}
+
+header a{
+    text-decoration:none;
+    color:white;
+    font-weight:600;
+    margin-right:25px;
+    letter-spacing:1px;
+    transition:0.3s;
+}
+
+header a:hover{
+    transform:translateY(-2px);
+    opacity:0.8;
+}
+
+#toolbar{
+    background:var(--panel-bg);
+    backdrop-filter:blur(25px);
+    border:1px solid var(--panel-border);
+    border-radius:var(--radius-big);
+    padding:20px;
+    margin-bottom:25px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+    align-items:center;
+    box-shadow:var(--shadow-soft);
+    position:relative;
+    z-index:2;
+}
+
+canvas{
+    border-radius:var(--radius-mid);
+    border:2px solid rgba(255,255,255,0.4);
+    background:white;
+    box-shadow:var(--shadow-soft);
+}
+
+button{
+    padding:12px 22px;
+    border:none;
+    border-radius:25px;
+    background:var(--primary-color);
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+    box-shadow:0 6px 20px rgba(0,0,0,0.2);
+}
+
+button:hover{
+    transform:translateY(-3px) scale(1.05);
+    box-shadow:0 0 20px var(--primary-color);
+}
+
+label{
+    font-size:0.9rem;
+    font-weight:600;
+}
+
+input,
+select{
+    padding:10px 14px;
+    border-radius:var(--radius-mid);
+    border:none;
+    background:var(--input-bg);
+    color:var(--text-color);
+    outline:none;
+    transition:0.3s;
+}
+
+input:focus,
+select:focus{
+    box-shadow:0 0 15px var(--primary-color);
+}
+
+#stickyBoard{
+    position:relative;
+    width:100%;
+    height:70vh;
+    border-radius:var(--radius-big);
+    background:var(--board-bg);
+    backdrop-filter:blur(25px);
+    border:1px solid var(--panel-border);
+    box-shadow:inset 0 10px 30px rgba(0,0,0,0.15);
+    overflow:hidden;
+    padding:20px;
+    z-index:1;
+}
+
+.sticky{
+    position:absolute;
+    min-width:180px;
+    min-height:140px;
+    padding:12px;
+    border-radius:20px;
+    box-shadow:var(--shadow-strong);
+    cursor:grab;
+    display:flex;
+    flex-direction:column;
+    animation:popIn 0.4s ease;
+}
+
+@keyframes popIn{
+    from{transform:scale(0.8);opacity:0;}
+    to{transform:scale(1);opacity:1;}
+}
+
+.sticky:active{
+    cursor:grabbing;
+}
+
+.sticky.highlight{
+    box-shadow:
+        0 0 30px var(--primary-color),
+        0 20px 50px rgba(0,0,0,0.3);
+    border:2px solid var(--primary-color);
+}
+
+.sticky-header{
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+}
+
+.sticky-header button{
+    background:transparent;
+    color:#333;
+    font-size:18px;
+    box-shadow:none;
+    padding:5px;
+}
+
+.sticky-header button:hover{
+    color:var(--primary-color);
+    transform:scale(1.3);
+}
+
+.sticky-canvas{
+    margin-top:10px;
+    border-radius:15px;
+    border:2px solid rgba(255,255,255,0.4);
+    background:white;
+    box-shadow:inset 0 5px 15px rgba(0,0,0,0.15);
+    cursor:crosshair;
+}
+
+body.dark{
+    --panel-bg: rgba(25,25,35,0.6);
+    --panel-border: rgba(255,255,255,0.15);
+    --board-bg: rgba(25,25,35,0.55);
+    --input-bg: rgba(40,40,50,0.8);
+    --text-color: #f3f3f3;
+    --body-bg: url('https://i.etsystatic.com/51064207/c/1080/1080/110/0/il/2a399b/6262581629/il_300x300.6262581629_1jyx.jpg') center/cover no-repeat fixed;
+}
+
+body.dark button{
+    box-shadow:0 0 20px var(--primary-color);
+}
