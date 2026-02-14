@@ -316,6 +316,29 @@
 }
 
 function formatTime(d){return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;}
+
+async function generateAIPlanner(){
+    if(!tasks.length) return alert("Add some tasks first!");
+
+    const res = await fetch('http://localhost:3000/api/plan', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ tasks })
+    });
+    const data = await res.json();
+    if(data.plan){
+        tasks = data.plan;
+        renderPlanner();
+    } else {
+        alert("Failed to generate AI plan");
+    }
+}
+
+// Add a button
+const aiBtn = document.createElement('button');
+aiBtn.textContent = "AI Organize Planner";
+aiBtn.onclick = generateAIPlanner;
+document.querySelector('main').appendChild(aiBtn);
 </script>
 </body>
 </html>
