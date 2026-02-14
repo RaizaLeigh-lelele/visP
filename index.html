@@ -4,136 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flowchart Planner</title>
-<style>
-    :root {
-        --primary-color: #1E90FF;
-        --header-bg: var(--primary-color);
-        --panel-bg: #fff;
-        --button-bg: var(--primary-color);
-        --button-text: #fff;
-        --task-border: var(--primary-color);
-        --progress-fill: var(--primary-color);
-        --bg-color: #f0f4f8;
-        --text-color: #333;
-    }
-
-    body {
-        margin:0;
-        font-family:Arial,sans-serif;
-        background: var(--bg-color);
-        color: var(--text-color);
-    }
-
-    header {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding:10px 20px;
-        background: var(--header-bg);
-        color:#fff;
-    }
-
-    .nav-left a {
-        color:#fff;
-        text-decoration:none;
-        margin-right:15px;
-        font-weight:bold;
-    }
-
-    .nav-right {
-        display:flex;
-        gap:10px;
-        align-items:center;
-    }
-
-    main {
-        padding:20px;
-    }
-
-    .panel {
-        background: var(--panel-bg);
-        border-radius:8px;
-        padding:15px;
-        box-shadow:0 2px 5px rgba(0,0,0,0.1);
-        margin-bottom:20px;
-    }
-
-    input,button {
-        padding:5px 10px;
-        border-radius:5px;
-        border:none;
-        margin:5px 0;
-    }
-
-    button {
-        cursor:pointer;
-        background: var(--button-bg);
-        color: var(--button-text);
-        font-weight:bold;
-    }
-
-    .progress-bar {
-        position:relative;
-        width:100%;
-        background:#ddd;
-        border-radius:8px;
-        overflow:hidden;
-        margin-bottom:10px;
-    }
-
-    .progress-bar-fill {
-        height:25px;
-        background: var(--progress-fill);
-        width:0%;
-        border-radius:8px;
-        transition:width 0.5s;
-    }
-
-    #plannerBoard {
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:20px;
-        margin-top:15px;
-    }
-
-    .flow-row {
-        display:flex;
-        gap:30px;
-        align-items:center;
-        position:relative;
-    }
-
-    .task-node {
-        padding:10px 15px;
-        border:2px solid var(--primary-color);
-        border-radius:8px;
-        background: var(--panel-bg);
-        text-align:center;
-        min-width:120px;
-        position:relative;
-        cursor:pointer;
-    }
-
-    .task-node.done {
-        opacity:0.5;
-    }
-
-    .arrow {
-        width:50px;
-        height:2px;
-        background:var(--primary-color);
-        position:absolute;
-        top:50%;
-        left:100%;
-    }
-
-    .focus-display {
-        margin-top:10px;
-        font-weight:bold;
-        font-size:1.1em;
-    }
-</style>
+<link rel="stylesheet" href="planner.css">
 </head>
 <body>
     <header>
@@ -142,10 +13,13 @@
             <a href="#">Tasks</a>
         </div>
         <div class="nav-right">
-            <button id="musicToggle">🎵 Music On</button>
-            <input type="color" id="colorPicker" value="#1E90FF" title="Change UI Color">
+            <button id="musicToggle">🎵</button>
+            <button id="modeToggle">🌙</button>
+            <button id="colorToggle">🌈</button>
+            <input type="color" id="colorPicker" value="#1E90FF" style="display:none;">
         </div>
     </header>
+    <div class="mega-container">
 
     <main>
         <div class="panel">
@@ -159,26 +33,47 @@
 
         <div class="panel">
             <h2>Progress</h2>
-            <div class="progress-bar"><div id="progressFill" class="progress-bar-fill"></div></div>
-        </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-bar-fill"></div>
+            </div>
 
-        <div class="panel">
+            <hr style="margin:20px 0; opacity:0.2;">
+
             <h2>Focus Mode</h2>
             <input type="number" id="focusTime" placeholder="Minutes (max 60)" min="1" max="60">
             <button onclick="startFocusMode()">Start Focus</button>
             <button onclick="stopFocusMode()">Stop Focus</button>
             <div class="focus-display" id="focusDisplay">No session running</div>
+        </div>
 
+        <div class="panel">
             <h2>Planner Board</h2>
             <div id="plannerBoard"></div>
-            </div>
+        </div>
 </main>
+</div>
 
 <audio id="bgMusic" loop>
     <source src="h.mp3" type="audio/mpeg">
 </audio>
 
 <script>
+    const modeToggle = document.getElementById("modeToggle");
+    const colorToggle = document.getElementById("colorToggle");
+    const colorPicker = document.getElementById("colorPicker");
+
+    modeToggle.addEventListener("click",()=>{
+        document.body.classList.toggle("dark");
+    });
+
+
+    colorToggle.addEventListener("click",()=>{
+        colorPicker.style.display =
+            colorPicker.style.display === "none"
+            ? "inline-block"
+            : "none";
+    });
+
     let tasks=[];
     const plannerBoard=document.getElementById('plannerBoard');
     const progressFill=document.getElementById('progressFill');
@@ -202,32 +97,15 @@
         const c = e.target.value;
 
         document.documentElement.style.setProperty('--primary-color', c);
-
         document.documentElement.style.setProperty('--header-bg', c);
         document.documentElement.style.setProperty('--panel-bg', '#fff');
         document.documentElement.style.setProperty('--footer-bg', c);
-
         document.documentElement.style.setProperty('--button-bg', c);
         document.documentElement.style.setProperty('--button-text', '#fff');
-
         document.documentElement.style.setProperty('--task-border', c);
         document.documentElement.style.setProperty('--arrow-color', c);
-
         document.documentElement.style.setProperty('--progress-fill', c);
-
         document.documentElement.style.setProperty('--text-color', c);
-
-        document.querySelectorAll('.task-node, .planner-card').forEach(el => {
-            el.style.borderColor = c;
-        });
-
-        document.querySelectorAll('.arrow').forEach(el => {
-            el.style.backgroundColor = c;
-        });
-
-        document.querySelectorAll('button').forEach(el => {
-            el.style.backgroundColor = c;
-        });
     });
 
     function addTask(){
@@ -273,11 +151,6 @@
                 updateProgress();
             };
             row.appendChild(node);
-            if(i<sorted.length-1){
-                const arrow=document.createElement('div');
-                arrow.className='arrow';
-                node.appendChild(arrow);
-            }
         });
         plannerBoard.appendChild(row);
     }
